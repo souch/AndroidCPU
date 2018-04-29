@@ -34,9 +34,9 @@ public class MainActivity extends AppCompatActivity {
                     if (cores[i] < 0)
                         info += " x";
                     else
-                        info += " " + (int) (cores[i] * 100);
+                        info += " " + (int) (cores[i] * 100) + "%";
                 }
-                info += ", CPU total: " + CpuInfo.getCpuUsage(cores);
+                info += ", CPU total: " + CpuInfo.getCpuUsage(cores) + "%";
 
                 text.setText(info);
 

@@ -56,6 +56,8 @@ public class CpuInfo {
             coreStats.add(null);
 
         float[] coresUsage = new float[numCores];
+        for (byte i = 0; i < numCores; i++)
+            coresUsage[i] = -1;
 
         try {
             /* cat /proc/stat # example of possible output
@@ -71,29 +73,29 @@ public class CpuInfo {
                 String line = reader.readLine();
 
                 for (byte i = 0; i < numCores; i++) {
-                    coresUsage[i] = -1;
-                    // if cpu lines
-                    if (line.contains("cpu")) {
-                        // try get core stat number i
-                        curCoreStat = readCoreStat(i, line);
-                        if (curCoreStat != null) {
-                            CoreStat prevCoreStat = mPrevCoreStats.get(i);
-                            if (prevCoreStat != null) {
-                                float diffActive = curCoreStat.active - prevCoreStat.active;
-                                float diffTotal = curCoreStat.total - prevCoreStat.total;
-                                // check for strange values
-                                if (diffActive > 0 && diffTotal > 0)
-                                    // compute usage
-                                    coresUsage[i] = diffActive / diffTotal;
-                            }
+                    // cpu lines are only at the top of the file
+                    if (!line.contains("cpu"))
+                        break;
 
-                            // cur becomes prev (only if cpu online)
-                            mPrevCoreStats.set(i, curCoreStat);
-
-                            // load another line only if corresponding core has been found
-                            // otherwise try next core number with same line
-                            line = reader.readLine();
+                    // try get core stat number i
+                    curCoreStat = readCoreStat(i, line);
+                    if (curCoreStat != null) {
+                        CoreStat prevCoreStat = mPrevCoreStats.get(i);
+                        if (prevCoreStat != null) {
+                            float diffActive = curCoreStat.active - prevCoreStat.active;
+                            float diffTotal = curCoreStat.total - prevCoreStat.total;
+                            // check for strange values
+                            if (diffActive > 0 && diffTotal > 0)
+                                // compute usage
+                                coresUsage[i] = diffActive / diffTotal;
                         }
+
+                        // cur becomes prev (only if cpu online)
+                        mPrevCoreStats.set(i, curCoreStat);
+
+                        // load another line only if corresponding core has been found
+                        // otherwise try next core number with same line
+                        line = reader.readLine();
                     }
                 }
 
@@ -127,6 +129,7 @@ public class CpuInfo {
                 // we are recording the work being used by the user and
                 // system(work) and the total info of cpu stuff (total)
                 // http://stackoverflow.com/questions/3017162/how-to-get-total-cpu-usage-in-linux-c/3017438#3017438
+                // user  nice  system  idle  iowait  irq  softirq  steal
                 long active = Long.parseLong(toks[1]) + Long.parseLong(toks[2])
                         + Long.parseLong(toks[3]);
                 long total = Long.parseLong(toks[1]) + Long.parseLong(toks[2])

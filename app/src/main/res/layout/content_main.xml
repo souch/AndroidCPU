@@ -9,13 +9,22 @@
     tools:showIn="@layout/activity_main">
 
     <TextView
+        android:id="@+id/cpuUsage"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Tap on mail button to get cpu usage since previous tap"
-        android:id="@+id/cpuusage"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/cpuUsageFreq"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="47dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/cpuUsage" />
 
 </android.support.constraint.ConstraintLayout>

@@ -1,5 +1,6 @@
 package souch.androidcpu;
 
+import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
@@ -8,6 +9,9 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
+
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -22,39 +26,68 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                TextView text = (TextView) findViewById(R.id.cpuusage);
-
-                String info = new String();
-                info += "NbCore: " + CpuInfo.getNumCores() + ", Cores: ";
-
-
-                float[] cores = CpuInfo.getCoresUsage();
-                info += " total " + (int) cores[0] + " cores ";
-                for (int i = 1; i < cores.length; i++) {
-                    if (cores[i] < 0)
-                        info += " x";
-                    else
-                        info += " " + (int) (cores[i] * 100) + "%";
-                }
-                info += ", CPU total: " + CpuInfo.getCpuUsage(cores) + "%";
-
-                text.setText(info);
-
-                /*
-                // this require the app to be a system app:
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    HardwarePropertiesManager hardwarePropertiesManager = (HardwarePropertiesManager)
-                        getApplicationContext().getSystemService(Context.HARDWARE_PROPERTIES_SERVICE);
-                    CpuUsageInfo[] cpuUsageInfos = hardwarePropertiesManager.getCpuUsages();
-                    info += "l: " + cpuUsageInfos.length;
-                    for (int i=0; i < cpuUsageInfos.length; i++) {
-                        info += " " + i + ": " + cpuUsageInfos[i].getTotal() + " - " + cpuUsageInfos[i].getActive() + "\n";
-                    }
-                }
-                */
-
+                updateUsage();
             }
         });
+
+        Timer timer = new Timer();
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                runOnUiThread(new Runnable() {
+                    public void run() {
+                        updateUsageAuto();
+                    }
+                });
+            };
+        }, 1000, 1000);
+
+    }
+
+    private void updateUsageAuto() {
+        TextView textFreq = (TextView) findViewById(R.id.cpuUsageFreq);
+        String info = getCpuUsageFreq();
+        textFreq.setText(info);
+    }
+
+    private void updateUsage() {
+        TextView text = (TextView) findViewById(R.id.cpuUsage);
+        String info = new String();
+        if (Build.VERSION.SDK_INT < 26) {
+            info += getCpuUsageDeprecated();
+            text.setText(info);
+        }
+        else
+            text.setText("Fetching cpu usage from /proc/stat is deprecated on oreo");
+    }
+
+
+    private String getCpuUsageInfo(float[] cores) {
+        String info = new String();
+        info += " cores: \n";
+        for (int i = 1; i < cores.length; i++) {
+            if (cores[i] < 0)
+                info += "  " + i + ": x\n";
+            else
+                info += "  " + i + ": " + (int) (cores[i]) + "%\n";
+        }
+        info += "  moy=" + (int) cores[0] + "% \n";
+        info += "CPU total: " + CpuInfo.getCpuUsage(cores) + "%";
+        return info;
+    }
+
+    private String getCpuUsageFreq() {
+        String info = new String();
+        info += "using getCoresUsageGuessFromFreq";
+        info += getCpuUsageInfo(CpuInfo.getCoresUsageGuessFromFreq());
+        return info;
+    }
+
+    private String getCpuUsageDeprecated() {
+        String info = new String();
+        info += "using getCoresUsage";
+        info += getCpuUsageInfo(CpuInfo.getCoresUsageDeprecated());
+        return info;
     }
 
     @Override

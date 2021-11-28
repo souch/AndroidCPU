@@ -2,7 +2,6 @@ package souch.androidcpu;
 
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
@@ -30,6 +29,7 @@ public class MainActivity extends AppCompatActivity {
 
 
                 float[] cores = CpuInfo.getCoresUsage();
+                info += " total " + (int) cores[0] + " cores ";
                 for (int i = 1; i < cores.length; i++) {
                     if (cores[i] < 0)
                         info += " x";

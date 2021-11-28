@@ -32,7 +32,6 @@ public class CpuInfo {
         }
         return (int) (cpuUsage * 100 / (coresUsage.length - 1));
     }
-
     /*
      * @return array of cores usage since last call
      *   (first call always returns -1 as the func has never been called).
@@ -88,6 +87,9 @@ public class CpuInfo {
                             if (diffActive > 0 && diffTotal > 0)
                                 // compute usage
                                 coresUsage[i] = diffActive / diffTotal;
+                            // check strange values
+                            if (coresUsage[i] > 1)
+                                coresUsage[i] = 1;
                         }
 
                         // cur becomes prev (only if cpu online)
@@ -136,6 +138,7 @@ public class CpuInfo {
                         + Long.parseLong(toks[3]) + Long.parseLong(toks[4])
                         + Long.parseLong(toks[5]) + Long.parseLong(toks[6])
                         + Long.parseLong(toks[7]) + Long.parseLong(toks[8]);
+//                long active = total - Long.parseLong(toks[4]);
 
                 coreStat = new CoreStat(active, total);
             }

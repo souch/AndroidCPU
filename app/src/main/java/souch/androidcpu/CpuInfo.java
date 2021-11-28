@@ -236,9 +236,9 @@ public class CpuInfo {
             updateCurFreq();
             int cpuUsage = 0;
             if (max - min > 0 & max > 0 && cur > 0) {
-                if (cur == min)
-                    cpuUsage = 2; // consider lowest freq as 2% usage (usually core is offline if 0%)
-                else
+//                if (cur == min)
+//                    cpuUsage = 2; // consider lowest freq as 2% usage (usually core is offline if 0%)
+//                else
                     cpuUsage = (cur - min) * 100 / (max - min);
             }
             return cpuUsage;

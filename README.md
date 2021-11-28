@@ -5,4 +5,4 @@ Answer to the stackoverflow question : https://stackoverflow.com/questions/22405
 
 Basically the only important part is the CpuInfo class : https://github.com/souch/AndroidCPU/blob/master/app/src/main/java/souch/androidcpu/CpuInfo.java
 
-Supports >= oreo using guessing cpu usage from cpu freq
+Supports >= oreo by guessing cpu usage from cpu freq

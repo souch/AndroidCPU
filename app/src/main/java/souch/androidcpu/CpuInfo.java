@@ -20,15 +20,16 @@ public class CpuInfo {
     /*
      * @return total cpu usage (from 0 to 100) since last call of getCpuUsage or getCoresUsage
      *         first call always returns 0 as previous value is not known
+     * ! deprecated since oreo !
      */
     public static int getCpuUsageSinceLastCall() {
         if (Build.VERSION.SDK_INT < 26)
             return getCpuUsage(getCoresUsageDeprecated());
         else
-            return getCpuUsage(getCoresUsageGuessFromFreq());
+            return 0;
     }
 
-    /* @return total cpu usage (from 0 to 100)
+    /* @return total cpu usage (from 0 to 100) from cores usage array
      * @param coresUsage must come from getCoresUsageXX().
      */
     public static int getCpuUsage(float[] coresUsage) {
@@ -83,8 +84,108 @@ public class CpuInfo {
         }
     }
 
+    private static int getCurCpuFreq(int coreIndex) {
+        return readIntegerFile("/sys/devices/system/cpu/cpu" + coreIndex + "/cpufreq/scaling_cur_freq");
+    }
+
+    private static int getMinCpuFreq(int coreIndex) {
+        return readIntegerFile("/sys/devices/system/cpu/cpu" + coreIndex + "/cpufreq/cpuinfo_min_freq");
+    }
+
+    private static int getMaxCpuFreq(int coreIndex) {
+        return readIntegerFile("/sys/devices/system/cpu/cpu" + coreIndex + "/cpufreq/cpuinfo_max_freq");
+    }
+
+
+    // return 0 if any pb occurs
+    private static int readIntegerFile(String path)
+    {
+        int ret = 0;
+        try {
+            RandomAccessFile reader = new RandomAccessFile(path, "r");
+
+            try {
+                String line = reader.readLine();
+                ret = Integer.parseInt(line);
+            } finally {
+                reader.close();
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return ret;
+    }
+
+
+    // from https://stackoverflow.com/questions/7962155/how-can-you-detect-a-dual-core-cpu-on-an-android-device-from-code
+    /**
+     * Gets the number of cores available in this device, across all processors.
+     * Requires: Ability to peruse the filesystem at "/sys/devices/system/cpu"
+     * @return The number of cores, or 1 if failed to get result
+     */
+    public static int getNbCores() {
+        //Private Class to display only CPU devices in the directory listing
+        class CpuFilter implements FileFilter {
+            @Override
+            public boolean accept(File pathname) {
+                //Check if filename is "cpu", followed by one or more digits
+                if(Pattern.matches("cpu[0-9]+", pathname.getName())) {
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        try {
+            //Get directory containing CPU info
+            File dir = new File("/sys/devices/system/cpu/");
+            //Filter to only list the devices we care about
+            File[] files = dir.listFiles(new CpuFilter());
+            //Return the number of cores (virtual CPU devices)
+            return files.length;
+        } catch(Exception e) {
+            //Default to return 1 core
+            return 1;
+        }
+    }
+
+    // current cores frequencies
+    private static ArrayList<CoreFreq> mCoresFreq;
+
+    private static class CoreFreq {
+        int num, cur, min, max;
+
+        CoreFreq(int num) {
+            this.num = num;
+            min = getMinCpuFreq(num);
+            max = getMaxCpuFreq(num);
+        }
+
+        void updateCurFreq() {
+            cur = getCurCpuFreq(num);
+            min = getMinCpuFreq(num);
+            max = getMaxCpuFreq(num);
+        }
+
+        /* return usage from 0 to 100 */
+        int getCurUsage() {
+            updateCurFreq();
+            int cpuUsage = 0;
+            if (max - min > 0 & max > 0 && cur > 0) {
+//                if (cur == min)
+//                    cpuUsage = 2; // consider lowest freq as 2% usage (usually core is offline if 0%)
+//                else
+                cpuUsage = (cur - min) * 100 / (max - min);
+            }
+            return cpuUsage;
+        }
+    }
+
+
+    /*********************************/
+    /* !!! deprecated since oreo !!! */
+
     /*
-     *  !!! deprecated since oreo !!!
      * @return array of cores usage since last call
      *   (first call always returns -1 as the func has never been called).
      *   array size = nbcore +1 as the first element is for global cpu usage
@@ -163,6 +264,7 @@ public class CpuInfo {
         return coresUsage;
     }
 
+
     /* return CpuStat read, or null if it could not be read (e.g. cpu offline)
      * @param coreNum coreNum=0 return global cpu state, coreNum=1 return first core
      *
@@ -212,103 +314,5 @@ public class CpuInfo {
 
     // previous stat read
     private static ArrayList<CoreStat> mPrevCoreStats;
-
-    // current cores frequencies
-    private static ArrayList<CoreFreq> mCoresFreq;
-
-    private static class CoreFreq {
-        int num, cur, min, max;
-
-        CoreFreq(int num) {
-            this.num = num;
-            min = getMinCpuFreq(num);
-            max = getMaxCpuFreq(num);
-        }
-
-        void updateCurFreq() {
-            cur = getCurCpuFreq(num);
-            min = getMinCpuFreq(num);
-            max = getMaxCpuFreq(num);
-        }
-
-        /* return usage from 0 to 100 */
-        int getCurUsage() {
-            updateCurFreq();
-            int cpuUsage = 0;
-            if (max - min > 0 & max > 0 && cur > 0) {
-//                if (cur == min)
-//                    cpuUsage = 2; // consider lowest freq as 2% usage (usually core is offline if 0%)
-//                else
-                    cpuUsage = (cur - min) * 100 / (max - min);
-            }
-            return cpuUsage;
-        }
-    }
-
-
-    private static int getCurCpuFreq(int coreIndex) {
-        return readIntegerFile("/sys/devices/system/cpu/cpu" + coreIndex + "/cpufreq/scaling_cur_freq");
-    }
-
-    private static int getMinCpuFreq(int coreIndex) {
-        return readIntegerFile("/sys/devices/system/cpu/cpu" + coreIndex + "/cpufreq/cpuinfo_min_freq");
-    }
-
-    private static int getMaxCpuFreq(int coreIndex) {
-        return readIntegerFile("/sys/devices/system/cpu/cpu" + coreIndex + "/cpufreq/cpuinfo_max_freq");
-    }
-
-
-    // return 0 if any pb occurs
-    private static int readIntegerFile(String path)
-    {
-        int ret = 0;
-        try {
-            RandomAccessFile reader = new RandomAccessFile(path, "r");
-
-            try {
-                String line = reader.readLine();
-                ret = Integer.parseInt(line);
-            } finally {
-                reader.close();
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return ret;
-    }
-
-
-    // from https://stackoverflow.com/questions/7962155/how-can-you-detect-a-dual-core-cpu-on-an-android-device-from-code
-    /**
-     * Gets the number of cores available in this device, across all processors.
-     * Requires: Ability to peruse the filesystem at "/sys/devices/system/cpu"
-     * @return The number of cores, or 1 if failed to get result
-     */
-    public static int getNbCores() {
-        //Private Class to display only CPU devices in the directory listing
-        class CpuFilter implements FileFilter {
-            @Override
-            public boolean accept(File pathname) {
-                //Check if filename is "cpu", followed by one or more digits
-                if(Pattern.matches("cpu[0-9]+", pathname.getName())) {
-                    return true;
-                }
-                return false;
-            }
-        }
-
-        try {
-            //Get directory containing CPU info
-            File dir = new File("/sys/devices/system/cpu/");
-            //Filter to only list the devices we care about
-            File[] files = dir.listFiles(new CpuFilter());
-            //Return the number of cores (virtual CPU devices)
-            return files.length;
-        } catch(Exception e) {
-            //Default to return 1 core
-            return 1;
-        }
-    }
 
 }

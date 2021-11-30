@@ -62,16 +62,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private String getCpuUsageInfo(float[] cores) {
+    private String getCpuUsageInfo(int[] cores) {
         String info = new String();
         info += " cores: \n";
         for (int i = 1; i < cores.length; i++) {
             if (cores[i] < 0)
                 info += "  " + i + ": x\n";
             else
-                info += "  " + i + ": " + (int) (cores[i]) + "%\n";
+                info += "  " + i + ": " + cores[i] + "%\n";
         }
-        info += "  moy=" + (int) cores[0] + "% \n";
+        info += "  moy=" + cores[0] + "% \n";
         info += "CPU total: " + CpuInfo.getCpuUsage(cores) + "%";
         return info;
     }
